@@ -4,7 +4,9 @@ on:
   workflow_dispatch: # برای اجرای دستی
   schedule:
     - cron: '*/30 * * * *' # اجرای خودکار هر ۳۰ دقیقه
-
+push:
+    branches:
+        - main 
 jobs:
   build:
     runs-on: ubuntu-latest
