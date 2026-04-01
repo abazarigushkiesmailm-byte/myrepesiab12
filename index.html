@@ -366,6 +366,17 @@
                 document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('active')); 
             } 
         });
+         async function updatePrice() {
+    try {
+        const response = await fetch('market_data.json');
+        const data = await response.json();
+        // فرض می‌کنیم یک المان با آیدی price در صفحه دارید
+        document.getElementById('price-display').innerText = "BTC: $" + data.btc_price;
+    } catch (e) {
+        console.log("در انتظار آپدیت رُبات...");
+    }
+}
+setInterval(updatePrice, 5000); // هر ۵ ثانیه چک کند
     </script>
 </body>
 </html>
