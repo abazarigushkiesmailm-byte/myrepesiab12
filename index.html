@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Station Pro | Elite v6 Responsive</title>
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-main: #0b121a;
+            --bg-card: rgba(1, 17, 66, 0.98);
+            --border-color: #300026;
+            --accent-color: #1255ff;
+            --text-primary: #f5f562;
+            --success: #00fe04;
+            --danger: #f30814;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: Arial, Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body:fullscreen .top-widget-bar { display: none; }
+        body:fullscreen #chart-container { height: 100vh; }
+
+        .top-widget-bar {
+            width: 100%;
+            background: #111417;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+        }
+
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #chart-container {
+            flex-grow: 1;
+            position: relative;
+            direction: ltr;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* کانتینر اصلی اطلاعات روی چارت - اصلاح شده برای موبایل */
+        .chart-overlay-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px; /* اضافه شده برای موبایل */
+            max-width: fit-content;
+            z-index: 110;
+            background: var(--bg-card);
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            direction: ltr;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            pointer-events: auto;
+        }
+
+        .price-display-group {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            min-width: 90px;
+        }
+
+        .overlay-symbol { font-size: 0.85rem; font-weight: bold; color: var(--accent-color); }
+        .overlay-price { font-size: 1.1rem; font-family: Arial; font-weight: bold; color: #fff; }
+
+        /* استایل شاخص‌های ترس/طمع و دامیننس */
+        .market-stats-group {
+            display: flex;
+            gap: 8px;
+            padding-right: 10px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 3px 8px;
+            border-radius: 6px;
+            min-width: 55px;
+        }
+
+        .stat-label { font-size: 0.6rem; color: #aaa; text-transform: uppercase; font-weight: bold; }
+        .stat-value { font-size: 0.8rem; font-weight: bold; color: #fff; }
+
+        .left-action-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .control-btn {
+            background: var(--accent-color);
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border: none;
+            transition: 0.2s;
+        }
+
+        /* مدیا کوئری برای موبایل‌های خیلی کوچک */
+        @media (max-width: 480px) {
+            .chart-overlay-info {
+                gap: 8px;
+                padding: 6px 10px;
+            }
+            .price-display-group { min-width: 70px; }
+            .overlay-price { font-size: 1rem; }
+            .stat-item { min-width: 45px; padding: 2px 4px; }
+            .control-btn { width: 30px; height: 30px; font-size: 0.8rem; }
+            .market-stats-group { padding-right: 5px; }
+        }
+
+        /* استایل دراورها */
+        .drawer {
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            z-index: 120;
+            background: var(--bg-card);
+            width: 280px;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid var(--accent-color);
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-height: 70vh;
+            overflow-y: auto;
+            direction: rtl;
+        }
+
+        .drawer.active { display: flex; }
+        .asset-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .asset-table td { padding: 8px 4px; color: #e1fa01; }
+        .coin-cell { display: flex; align-items: center; gap: 5px; font-weight: bold; color: var(--accent-color); }
+        .coin-cell img { width: 18px; height: 18px; border-radius: 50%; }
+
+        input, button, select {
+            background: #000; color: #41f206; border: 1px solid var(--border-color);
+            padding: 8px; border-radius: 8px; width: 100%; font-size: 0.85rem; margin-bottom: 5px;
+        }
+
+        .section-label {
+            font-size: 0.7rem; color: var(--accent-color); font-weight: bold;
+            margin: 8px 0; border-bottom: 1px solid #6d005b;
+        }
+        .cp { width: 30px !important; height: 22px; padding: 0; cursor: pointer; }
+        .draw-active { background: var(--danger) !important; color: #fff; }
+    </style>
+</head>
+
+<body>
+    <div class="top-widget-bar">
+        <div id="coinmarketcap-widget-marquee" coins="1,1027,825,1839,5426,74,52,2010" currency="USD" theme="dark" transparent="true" show-symbol-logo="true"></div>
+        <script type="text/javascript" src="https://files.coinmarketcap.com/static/widget/coinMarquee.js"></script>
+    </div>
+
+    <div class="main-content">
+        <div id="chart-container">
+            <div class="chart-overlay-info">
+                <div class="price-display-group">
+                    <span id="overlay-sym" class="overlay-symbol">BTC/USDT</span>
+                    <span id="overlay-price" class="overlay-price">0.00</span>
+                    <div id="overlay-change" style="font-size: 0.75rem;">0.00%</div>
+                </div>
+
+                <div class="market-stats-group">
+                    <div class="stat-item">
+                        <span class="stat-label">F&G</span>
+                        <span id="fg-index" class="stat-value">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">BTC.D</span>
+                        <span id="btc-dom" class="stat-value">--%</span>
+                    </div>
+                </div>
+                
+                <div class="left-action-buttons">
+                    <button class="control-btn" onclick="toggleDrawer('settings-drawer')" title="Settings"><i class="fas fa-cog"></i></button>
+                    <button class="control-btn" onclick="toggleDrawer('coin-drawer')" title="Coins"><i class="fas fa-list"></i></button>
+                    <button class="control-btn" id="fs-btn" onclick="toggleFullScreen()"><i class="fas fa-expand"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings-drawer" class="drawer">
+            <div class="section-label">جستجوی نماد</div>
+            <input type="text" id="search-input" placeholder="BTC..." onkeydown="if(event.key==='Enter') updateSymbol(this.value.toUpperCase())">
+            <select id="tf-select" onchange="changeTF(this.value)">
+                <option value="15m">15m</option>
+                <option value="1h">1h</option>
+                <option value="4h">4h</option>
+                <option value="1d" selected>1d</option>
+                <option value="1w">1w</option>
+            </select>
+            <div class="section-label">اندیکاتورها</div>
+            <label><input type="checkbox" id="show-bb" onchange="updateVisibility()"> Bollinger Bands</label>
+            <label><input type="checkbox" id="show-rsi" onchange="updateVisibility()"> RSI (14)</label>
+            <div class="section-label">ابزار ترسیم</div>
+            <button id="draw-btn" onclick="toggleDrawingMode()">فعالسازی ترسیم</button>
+            <button onclick="undoLastLine()">بازگشت (Undo)</button>
+            <button onclick="clearLines()" style="color: var(--danger)">حذف همه</button>
+        </div>
+
+        <div id="coin-drawer" class="drawer">
+            <div class="section-label" style="text-align: center;">TOP 100 COINS</div>
+            <div class="coin-list-container">
+                <table class="asset-table"><tbody id="top-coins-list"></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart, candleSeries, volumeSeries, ema7, ema30, ema200, socket;
+        let bbUpper, bbMiddle, bbLower, rsiSeries;
+        let currentSymbol = 'BTCUSDT', currentInterval = '1d', activeLines = [], isDrawingEnabled = false;
+
+        async function fetchMarketStats() {
+            try {
+                // دریافت شاخص ترس و طمع
+                const fgRes = await fetch('https://api.alternative.me/fng/');
+                const fgData = await fgRes.json();
+                document.getElementById('fg-index').innerText = fgData.data[0].value;
+                
+                // دریافت دامیننس از کوین‌گکو
+                const domRes = await fetch('https://api.coingecko.com/api/v3/global');
+                const domData = await domRes.json();
+                document.getElementById('btc-dom').innerText = domData.data.market_cap_percentage.btc.toFixed(1) + '%';
+            } catch (e) { console.log("Stats Error"); }
+        }
+
+        function toggleDrawer(id) {
+            const drawer = document.getElementById(id);
+            const isActive = drawer.classList.contains('active');
+            document.querySelectorAll('.drawer').forEach(d => d.classList.remove('active'));
+            if (!isActive) drawer.classList.add('active');
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('fs-btn').innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                document.getElementById('fs-btn').innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        }
+
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            chart = LightweightCharts.createChart(container, {
+                layout: { backgroundColor: '#0b121a', textColor: '#d1d4dc' },
+                grid: { vertLines: { color: '#16191e' }, horzLines: { color: '#16191e' } },
+                timeScale: { timeVisible: true, borderVisible: false },
+                rightPriceScale: { borderVisible: false },
+                width: container.clientWidth,
+                height: container.clientHeight
+            });
+
+            candleSeries = chart.addCandlestickSeries({ upColor: '#16c784', downColor: '#ea3943', borderVisible: false, wickUpColor: '#16c784', wickDownColor: '#ea3943' });
+            volumeSeries = chart.addHistogramSeries({ color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '', scaleMargins: { top: 0.8, bottom: 0 } });
+            
+            // EMAs
+            ema7 = chart.addLineSeries({ color: '#FFD700', lineWidth: 1, priceLineVisible: false });
+            ema30 = chart.addLineSeries({ color: '#E040FB', lineWidth: 1, priceLineVisible: false });
+            ema200 = chart.addLineSeries({ color: '#FFFFFF', lineWidth: 2, priceLineVisible: false });
+
+            // Bollinger & RSI
+            bbUpper = chart.addLineSeries({ color: 'rgba(33, 150, 243, 0.5)', lineWidth: 1, visible: false });
+            bbMiddle = chart.addLineSeries({ color: 'rgba(33, 150, 243, 0.3)', lineWidth: 1, visible: false });
+            bbLower = chart.addLineSeries({ color: 'rgba(33, 150, 243, 0.5)', lineWidth: 1, visible: false });
+            rsiSeries = chart.addLineSeries({ color: '#ff9800', lineWidth: 1.5, priceScaleId: 'rsi-scale', visible: false });
+            chart.priceScale('rsi-scale').applyOptions({ scaleMargins: { top: 0.75, bottom: 0.05 } });
+
+            window.addEventListener('resize', () => chart.resize(container.clientWidth, container.clientHeight));
+            loadTopVolumeCoins();
+            updateSymbol('BTCUSDT');
+            fetchMarketStats();
+            setInterval(fetchMarketStats, 300000); // هر 5 دقیقه
+        }
+
+        async function updateSymbol(symbol) {
+            if (!symbol.endsWith('USDT')) symbol += 'USDT';
+            currentSymbol = symbol;
+            document.getElementById('overlay-sym').innerText = symbol;
+            if (socket) socket.close();
+
+            try {
+                const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${currentInterval}&limit=500`);
+                const raw = await res.json();
+                const data = raw.map(d => ({ time: d[0] / 1000, open: +d[1], high: +d[2], low: +d[3], close: +d[4], vol: +d[5] }));
+
+                candleSeries.setData(data);
+                volumeSeries.setData(data.map(d => ({ time: d.time, value: d.vol, color: d.close >= d.open ? '#16c78444' : '#ea394344' })));
+                ema7.setData(calcEMA(data, 7));
+                ema30.setData(calcEMA(data, 30));
+                ema200.setData(calcEMA(data, 200));
+                chart.timeScale().fitContent();
+
+                socket = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${currentInterval}`);
+                socket.onmessage = e => {
+                    const k = JSON.parse(e.data).k;
+                    const price = parseFloat(k.c);
+                    const open = parseFloat(k.o);
+                    const change = ((price - open) / open * 100).toFixed(2);
+                    document.getElementById('overlay-price').innerText = price.toLocaleString();
+                    document.getElementById('overlay-price').style.color = price >= open ? 'var(--success)' : 'var(--danger)';
+                    document.getElementById('overlay-change').innerText = (change >= 0 ? '+' : '') + change + '%';
+                    document.getElementById('overlay-change').style.color = change >= 0 ? 'var(--success)' : 'var(--danger)';
+                    candleSeries.update({ time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c });
+                };
+            } catch (err) {}
+        }
+
+        const calcEMA = (data, p) => { let k = 2/(p+1); let ema = []; let prev = data[0].close; data.forEach(d => { let val = (d.close*k) + (prev*(1-k)); ema.push({time:d.time, value:val}); prev=val; }); return ema; };
+
+        async function loadTopVolumeCoins() { 
+            const res = await fetch('https://api.binance.com/api/v3/ticker/24hr'); 
+            const data = await res.json(); 
+            const top = data.filter(i=>i.symbol.endsWith('USDT')).sort((a,b)=>b.quoteVolume-a.quoteVolume).slice(0,100); 
+            document.getElementById('top-coins-list').innerHTML = top.map(c=>{ 
+                const s=c.symbol.replace('USDT',''); 
+                return `<tr onclick="updateSymbol('${c.symbol}'); toggleDrawer('coin-drawer');"><td class="coin-cell"><img src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${s.toLowerCase()}.png" onerror="this.src='https://via.placeholder.com/20'">${s}</td><td>${parseFloat(c.lastPrice).toLocaleString()}</td></tr>`; 
+            }).join(''); 
+        }
+
+        function updateVisibility() {
+            let bb = document.getElementById('show-bb').checked;
+            let rsi = document.getElementById('show-rsi').checked;
+            bbUpper.applyOptions({visible:bb}); bbMiddle.applyOptions({visible:bb}); bbLower.applyOptions({visible:bb});
+            rsiSeries.applyOptions({visible:rsi});
+        }
+
+        function toggleDrawingMode() { isDrawingEnabled=!isDrawingEnabled; let b=document.getElementById('draw-btn'); b.innerText=isDrawingEnabled?"Drawing Active":"Enable Draw"; b.classList.toggle('draw-active', isDrawingEnabled); }
+        function changeTF(tf) { currentInterval=tf; updateSymbol(currentSymbol); }
+
+        initChart();
+        document.addEventListener('click', e => { 
+            if(!e.target.closest('.drawer') && !e.target.closest('.control-btn') && !e.target.closest('.chart-overlay-info')) { 
+                document.querySelectorAll('.drawer').forEach(d=>d.classList.remove('active')); 
+            } 
+        });
+    </script>
+</body>
+</html>
